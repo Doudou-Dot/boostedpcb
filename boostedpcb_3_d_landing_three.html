@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="BOOSTEDPCB — Verified RTX 4090 PCBs. Tested, packed, shipped. Other models on request." />
+  <meta name="theme-color" content="#0ea5e9" />
+  <title>BOOSTEDPCB — Verified 4090 PCBs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#06090f; /* near-black */
+      --bg2:#0b1220; /* deep blue */
+      --brand:#22d3ee; /* cyan */
+      --brand-2:#a7f3d0; /* mint */
+      --ink:#e5f1ff;
+      --ink-dim:#b7c6e6;
+      --glass: rgba(255,255,255,0.07);
+      --glass-2: rgba(255,255,255,0.12);
+      --gold:#fbbf24;
+      --green:#10b981;
+      --red:#ef4444;
+    }
+    html,body{margin:0;height:100%;background: radial-gradient(1000px 600px at 70% 10%, #0b1a2a 0%, var(--bg1) 60%), linear-gradient(180deg, var(--bg2), var(--bg1)); color:var(--ink); font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;}
+    canvas#bg{position:fixed; inset:0; z-index:0; outline:none;}
+
+    .page{position:relative; z-index:1;}
+
+    .topbar{
+      position:sticky; top:0; backdrop-filter:saturate(120%) blur(10px);
+      background:linear-gradient(180deg, rgba(10,18,32,0.8), rgba(10,18,32,0.3));
+      border-bottom:1px solid rgba(255,255,255,0.06);
+    }
+    .wrap{max-width:1100px; margin:0 auto; padding:14px 20px;}
+    .row{display:flex; align-items:center; gap:16px;}
+    .spacer{flex:1}
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:var(--glass); border:1px solid rgba(255,255,255,0.08); color:var(--ink); font-weight:600; font-size:14px;}
+    .pill svg{opacity:0.9}
+    .btn{display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px; text-decoration:none; color:#06121f; background:linear-gradient(180deg, #22d3ee, #06b6d4); font-weight:800; border:0; cursor:pointer; box-shadow:0 10px 30px rgba(34,211,238,0.25)}
+    .btn.secondary{background:rgba(255,255,255,0.1); color:var(--ink); border:1px solid rgba(255,255,255,0.15); box-shadow:none}
+    .btn:active{transform:translateY(1px)}
+
+    .hero{padding:60px 20px 40px}
+    .hero-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:30px}
+    @media (max-width: 900px){ .hero-grid{grid-template-columns:1fr} }
+
+    .card{background:var(--glass); border:1px solid rgba(255,255,255,0.09); border-radius:20px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.25)}
+    .card:hover{border-color:rgba(255,255,255,0.16)}
+
+    h1{font-size:42px; line-height:1.06; margin:10px 0 10px}
+    .lead{color:var(--ink-dim); font-size:18px}
+
+    .kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:18px}
+    .kpi{padding:12px 16px; background:var(--glass-2); border:1px solid rgba(255,255,255,0.12); border-radius:16px; text-align:center}
+    .kpi b{font-size:22px;}
+
+    .section{padding:26px 20px}
+    .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+    @media (max-width: 900px){ .grid-3{grid-template-columns:1fr} }
+
+    .badge{display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); padding:8px 12px; border-radius:999px; font-weight:600; color:var(--ink)}
+    .list{display:grid; gap:10px; margin:12px 0}
+
+    .foot{padding:30px 20px; opacity:0.9}
+
+    /* Floating watermark behind content */
+    .watermark{
+      position:absolute; inset:auto 0 -80px 0; display:flex; justify-content:center; pointer-events:none; opacity:0.08;
+      filter:blur(1px);
+    }
+
+    .logo{display:flex; align-items:center; gap:12px}
+    .logo-title{font-weight:900; letter-spacing:0.4px; font-size:18px}
+
+    /* QR styles */
+    .qr{display:flex; align-items:center; gap:16px; flex-wrap:wrap}
+    .qr img{width:180px; height:180px; object-fit:contain; border-radius:12px; background:#fff; padding:6px; box-shadow:0 8px 30px rgba(0,0,0,0.25)}
+    .muted{color:var(--ink-dim); font-size:13px}
+
+    /* tiny diagnostics */
+    .diag{position:fixed; left:10px; bottom:10px; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.1); padding:6px 8px; border-radius:8px; font-size:11px; color:#c7e1ff; z-index:9; pointer-events:none}
+  </style>
+</head>
+<body>
+  <canvas id="bg" aria-hidden="true"></canvas>
+
+  <div class="page">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="wrap row">
+        <div class="logo" aria-label="BOOSTEDPCB logo">
+          <!-- Paperclip mascot (original, not Clippy) -->
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="clipGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#22d3ee"/>
+                <stop offset="100%" stop-color="#a7f3d0"/>
+              </linearGradient>
+            </defs>
+            <!-- Paperclip body -->
+            <path d="M22 26c0-8 6-14 14-14s14 6 14 14v16c0 8-6 14-14 14s-14-6-14-14V24c0-6 4-10 10-10s10 4 10 10v17" stroke="url(#clipGrad)" stroke-width="5" stroke-linecap="round"/>
+            <!-- Glasses -->
+            <circle cx="22" cy="23" r="6" stroke="#e5f1ff" stroke-width="3"/>
+            <circle cx="38" cy="23" r="6" stroke="#e5f1ff" stroke-width="3"/>
+            <rect x="27" y="22" width="6" height="2" fill="#e5f1ff"/>
+            <!-- Tiny PCB badge -->
+            <rect x="6" y="44" width="18" height="12" rx="2" fill="#10b981" stroke="#064e3b"/>
+            <path d="M9 48h4v4H9m5-4h4v4h-4m5-4h3" stroke="#fbbf24" stroke-width="2"/>
+          </svg>
+          <div class="logo-title">BOOSTEDPCB</div>
+        </div>
+
+        <!-- Language toggle -->
+        <button class="pill" id="langToggle" type="button" title="Switch language">EN | 中文</button>
+
+        <div class="spacer"></div>
+        <a class="pill" href="#contact" title="Jump to contact">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 5l10 6 10-6" stroke="currentColor" stroke-width="1.5"/><path d="M2 19V5l10 6 10-6v14H2z" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span data-i18n="nav_contact">Contact</span></a>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="card">
+          <div class="pill" style="margin-bottom:10px;" data-i18n="shipping_pill">Currently shipping: <span style="color:var(--brand); font-weight:900; margin-left:6px">RTX 4090 PCBs</span></div>
+          <h1 data-i18n="hero_title">Verified GPU PCBs —<br/>tested, packed, shipped.</h1>
+          <p class="lead" data-i18n="hero_lead">Specialized in <b>RTX 4090</b> boards today. Other models upon request — message us to check availability.
+            Each PCB is validated with GPU-Z, 3DMark, and on-bench inspection before extraction.</p>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:16px">
+            <a class="btn" href="mailto:boostedpcb@gmail.com" aria-label="Email">boostedpcb@gmail.com</a>
+            <button class="btn secondary" id="copyWechat" title="Copy WeChat ID">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 8a6 6 0 10-11.31 3.313A8 8 0 002 19l3.5-2A8 8 0 0012 21a8 8 0 008-8 6 6 0 00-2-5z" stroke="currentColor" stroke-width="1.5"/></svg>
+              WeChat: <b style="letter-spacing:0.3px">PcbLord</b>
+            </button>
+          </div>
+          <div class="kpis">
+            <div class="kpi"><div data-i18n="kpi_models_label">Models</div><b data-i18n="kpi_models_value">4090 now</b><div style="font-size:12px;color:var(--ink-dim)" data-i18n="kpi_models_sub">Others on request</div></div>
+            <div class="kpi"><div data-i18n="kpi_ta_label">Turnaround</div><b data-i18n="kpi_ta_value">Fast</b><div style="font-size:12px;color:var(--ink-dim)" data-i18n="kpi_ta_sub">Bench-tested</div></div>
+            <div class="kpi"><div data-i18n="kpi_pack_label">Packaging</div><b data-i18n="kpi_pack_value">Secure</b><div style="font-size:12px;color:var(--ink-dim)" data-i18n="kpi_pack_sub">Anti-static + foam</div></div>
+          </div>
+        </div>
+        <div class="card" aria-label="Process">
+          <div style="font-weight:800; letter-spacing:0.3px; margin-bottom:8px" data-i18n="how_title">How it works</div>
+          <div class="list">
+            <div class="badge" data-i18n="how_1">1️⃣ Source & verify donor GPU (GPU‑Z, stress tests)</div>
+            <div class="badge" data-i18n="how_2">2️⃣ Cleanly extract PCB, preserve connectors</div>
+            <div class="badge" data-i18n="how_3">3️⃣ Inspect, label, anti‑static pack</div>
+            <div class="badge" data-i18n="how_4">4️⃣ Ship with tracking; share proof‑of‑test</div>
+          </div>
+          <div style="margin-top:14px; font-size:13px; color:var(--ink-dim)" data-i18n="note_pcbonly">Note: We sell <b>PCBs only</b>. Full GPU units are not included.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Value props -->
+    <section class="section">
+      <div class="wrap grid-3">
+        <div class="card">
+          <div style="font-size:18px; font-weight:800; margin-bottom:6px" data-i18n="why_title">Why BOOSTEDPCB</div>
+          <p class="lead" data-i18n="why_lead">We’re a niche supplier focused on consistency: 
+            stable sources, documented tests, careful packing. Less drama, more delivery.</p>
+        </div>
+        <div class="card">
+          <div style="font-size:18px; font-weight:800; margin-bottom:6px" data-i18n="stock_title">Current stock</div>
+          <div class="list">
+            <div class="badge" data-i18n="stock_item1">RTX 4090 FE / MSI variants</div>
+            <div class="badge" data-i18n="stock_item2">Batch reservations on request</div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-size:18px; font-weight:800; margin-bottom:6px" data-i18n="custom_title">Custom requests</div>
+          <p class="lead" data-i18n="custom_lead">Need a different board? Ping us with your spec list. If it exists, we’ll hunt it.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="section">
+      <div class="wrap">
+        <div class="card" style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between">
+          <div class="logo" style="gap:10px">
+            <div style="font-weight:900; font-size:22px" data-i18n="contact_title">Let’s talk logistics</div>
+            <div class="pill">Email: <b style="margin-left:6px">boostedpcb@gmail.com</b></div>
+            <div class="pill">WeChat: <b style="margin-left:6px">PcbLord</b></div>
+            <div class="qr">
+              <!-- Put Boostedpcb.jpeg in the same folder as this HTML file -->
+              <img id="qr" alt="WeChat QR code" src="./Boostedpcb.jpeg" onerror="this.style.display='none';document.getElementById('qrFallback').style.display='block';" />
+              <div class="muted" data-i18n="qr_caption">Scan the QR to add us on WeChat.</div>
+              <div id="qrFallback" class="muted" style="display:none">QR image not found. Place <b>Boostedpcb.jpeg</b> next to this file or share a hosted URL.</div>
+            </div>
+          </div>
+          <div>
+            <a class="btn" href="mailto:boostedpcb@gmail.com" data-i18n="cta_start">Start an order</a>
+          </div>
+        </div>
+      </div>
+      <div class="watermark">
+        <div style="width:600px; height:120px; border-radius:20px; background:linear-gradient(90deg, rgba(34,211,238,0.15), rgba(16,185,129,0.15)); border:1px solid rgba(255,255,255,0.1)"></div>
+      </div>
+    </section>
+
+    <footer class="foot wrap" aria-label="Footer">
+      <div style="font-size:12px; color:var(--ink-dim)">© <span id="year"></span> BOOSTEDPCB. <span data-i18n="footer_note">PCBs only. Trademarks and product names belong to their owners.</span></div>
+    </footer>
+  </div>
+
+  <!-- Language toggle (runs even if Three.js fails). Also adds tests for both languages) -->
+  <script>
+  (function(){
+    const i18n = {
+      en: {
+        nav_contact: 'Contact',
+        shipping_pill: 'Currently shipping: <span style="color:var(--brand); font-weight:900; margin-left:6px">RTX 4090 PCBs</span>',
+        hero_title: 'Verified GPU PCBs —<br/>tested, packed, shipped.',
+        hero_lead: 'Specialized in <b>RTX 4090</b> boards today. Other models upon request — message us to check availability. Each PCB is validated with GPU-Z, 3DMark, and on-bench inspection before extraction.',
+        kpi_models_label: 'Models', kpi_models_value: '4090 now', kpi_models_sub: 'Others on request',
+        kpi_ta_label: 'Turnaround', kpi_ta_value: 'Fast', kpi_ta_sub: 'Bench-tested',
+        kpi_pack_label: 'Packaging', kpi_pack_value: 'Secure', kpi_pack_sub: 'Anti-static + foam',
+        how_title: 'How it works',
+        how_1: '1️⃣ Source & verify donor GPU (GPU‑Z, stress tests)',
+        how_2: '2️⃣ Cleanly extract PCB, preserve connectors',
+        how_3: '3️⃣ Inspect, label, anti‑static pack',
+        how_4: '4️⃣ Ship with tracking; share proof‑of‑test',
+        note_pcbonly: 'Note: We sell <b>PCBs only</b>. Full GPU units are not included.',
+        why_title: 'Why BOOSTEDPCB',
+        why_lead: 'We’re a niche supplier focused on consistency: stable sources, documented tests, careful packing. Less drama, more delivery.',
+        stock_title: 'Current stock',
+        stock_item1: 'RTX 4090 FE / MSI variants',
+        stock_item2: 'Batch reservations on request',
+        custom_title: 'Custom requests',
+        custom_lead: 'Need a different board? Ping us with your spec list. If it exists, we’ll hunt it.',
+        contact_title: 'Let’s talk logistics',
+        qr_caption: 'Scan the QR to add us on WeChat.',
+        cta_start: 'Start an order',
+        footer_note: 'PCBs only. Trademarks and product names belong to their owners.'
+      },
+      zh: {
+        nav_contact: '联系',
+        shipping_pill: '当前供应：<span style="color:var(--brand); font-weight:900; margin-left:6px">RTX 4090 PCB</span>',
+        hero_title: '经验证的 GPU PCB——<br/>已测试、已包装、可发货。',
+        hero_lead: '目前专注于 <b>RTX 4090</b> 主板。其他型号可按需提供——联系确认库存。每块 PCB 在拆板前都会通过 GPU‑Z、3DMark 及台架检查验证。',
+        kpi_models_label: '型号', kpi_models_value: '当前 4090', kpi_models_sub: '其他按需',
+        kpi_ta_label: '交付周期', kpi_ta_value: '快速', kpi_ta_sub: '台架实测',
+        kpi_pack_label: '包装', kpi_pack_value: '安全', kpi_pack_sub: '防静电 + 泡棉',
+        how_title: '流程',
+        how_1: '1️⃣ 采购并验证供体显卡（GPU‑Z、压力测试）',
+        how_2: '2️⃣ 规范拆板，保护连接器',
+        how_3: '3️⃣ 复检、贴签、防静电包装',
+        how_4: '4️⃣ 物流可追踪，并提供测试证明',
+        note_pcbonly: '提示：仅售 <b>PCB</b>，不含整卡。',
+        why_title: '为什么选择 BOOSTEDPCB',
+        why_lead: '我们专注稳定交付：稳定货源、测试留痕、细心包装。少纠纷，多交付。',
+        stock_title: '现货',
+        stock_item1: 'RTX 4090 FE / MSI 版本',
+        stock_item2: '可按需预留整批',
+        custom_title: '定制需求',
+        custom_lead: '需要其他型号？把规格发给我们，只要有，我们就帮你找。',
+        contact_title: '来谈发货细节',
+        qr_caption: '扫码添加微信联系。',
+        cta_start: '开始下单',
+        footer_note: '仅售 PCB。所有商标与产品名称归原权利人所有。'
+      }
+    };
+
+    function setLang(lang){
+      const dict = i18n[lang] || i18n.en;
+      document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (dict[key]) el.innerHTML = dict[key];
+      });
+      const btn = document.getElementById('langToggle');
+      if (btn){ btn.textContent = lang === 'zh' ? '中文 | EN' : 'EN | 中文'; btn.dataset.lang = lang; }
+    }
+    window.__i18nSetLang = setLang; // for tests
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('langToggle');
+      const stored = localStorage.getItem('lang');
+      function prefersZh(){
+        const langs = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || navigator.userLanguage || '']).filter(Boolean);
+        return langs.some(l => /^zh(?:$|[-_])/i.test(l));
+      }
+      const initial = stored || (prefersZh() ? 'zh' : 'en');
+      if (!stored) localStorage.setItem('lang', initial);
+      setLang(initial);
+      if (btn){
+        btn.addEventListener('click', () => {
+          const current = btn.dataset.lang === 'zh' ? 'zh' : 'en';
+          const next = current === 'en' ? 'zh' : 'en';
+          setLang(next);
+          localStorage.setItem('lang', next);
+        });
+      }
+      // --- tests for language toggle ---
+      const nav = document.querySelector('[data-i18n="nav_contact"]');
+      const before = nav ? nav.textContent.trim() : '';
+      setLang('zh');
+      const afterZh = nav ? nav.textContent.trim() : '';
+      console.assert(afterZh.includes('联系'), '[TEST] zh toggle updates nav_contact');
+      setLang('en');
+      const afterEn = nav ? nav.textContent.trim() : '';
+      console.assert(afterEn.includes('Contact'), '[TEST] en toggle restores nav_contact');
+    });
+  })();
+  </script>
+
+  <!-- Import map targets local files so it runs fully offline. Place files in ./lib/ -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./lib/three.module.js",
+        "three/examples/jsm/controls/OrbitControls.js": "./lib/OrbitControls.js"
+      }
+    }
+  </script>
+
+  <!-- Three.js background -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
+    // --- quick runtime tests ("test cases") ---
+    console.assert(!!THREE, '[TEST] THREE is loaded');
+    console.assert(typeof OrbitControls === 'function', '[TEST] OrbitControls available');
+
+    const diag = document.createElement('div');
+    diag.className = 'diag';
+    diag.textContent = 'Diagnostics: init…';
+    document.body.appendChild(diag);
+
+    const canvas = document.getElementById('bg');
+    const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x0b1220, 12, 42);
+
+    const camera = new THREE.PerspectiveCamera(58, innerWidth/innerHeight, 0.1, 100);
+    camera.position.set(0, 2.8, 10);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; controls.enablePan = false; controls.minDistance = 6; controls.maxDistance = 18; controls.autoRotate = true; controls.autoRotateSpeed = 0.4;
+
+    // Lights
+    const amb = new THREE.AmbientLight(0x88ccff, 0.7); scene.add(amb);
+    const key = new THREE.PointLight(0x22d3ee, 18, 40); key.position.set(6, 10, 8); scene.add(key);
+    const fill = new THREE.PointLight(0x10b981, 8, 30); fill.position.set(-8, 4, -6); scene.add(fill);
+
+    // PCB swarm
+    const group = new THREE.Group(); scene.add(group);
+
+    const pcbGeo = new THREE.BoxGeometry(1.8, 0.08, 1.0, 1, 1, 1);
+    const pcbMat = new THREE.MeshStandardMaterial({color:0x0ea371, metalness:0.2, roughness:0.5});
+    const edgeMat = new THREE.LineBasicMaterial({color:0xfbbf24, transparent:true, opacity:0.9});
+
+    const chips = [];
+    for (let i=0; i<28; i++){
+      const pcb = new THREE.Mesh(pcbGeo, pcbMat.clone());
+      pcb.position.set((Math.random()-0.5)*16, (Math.random()-0.5)*8, (Math.random()-0.5)*16);
+      pcb.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+      pcb.userData.spin = (Math.random()*0.6+0.1) * (Math.random()<0.5?1:-1);
+      group.add(pcb);
+
+      const edges = new THREE.EdgesGeometry(pcbGeo);
+      const outline = new THREE.LineSegments(edges, edgeMat);
+      pcb.add(outline);
+
+      // Add a small GPU chip on top
+      const chip = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.08, 0.36), new THREE.MeshStandardMaterial({color:0x111827, metalness:0.6, roughness:0.2, emissive:0x0a0a0a}));
+      chip.position.y = 0.08;
+      pcb.add(chip); chips.push(chip);
+    }
+
+    // Subtle floating particles grid
+    const partGeo = new THREE.IcosahedronGeometry(0.02, 0);
+    const partMat = new THREE.MeshBasicMaterial({color:0x8dd6ff});
+    for (let x=-10; x<=10; x++){
+      for (let z=-10; z<=10; z++){
+        if ((x+z) % 2 === 0){
+          const p = new THREE.Mesh(partGeo, partMat);
+          p.position.set(x*0.5, -2.0 + Math.random()*0.5, z*0.5);
+          p.userData.offset = Math.random()*Math.PI*2;
+          scene.add(p);
+        }
+      }
+    }
+
+    // Animate
+    const clock = new THREE.Clock();
+    function animate(){
+      const t = clock.getElapsedTime();
+      group.children.forEach((pcb, idx)=>{
+        pcb.rotation.y += 0.0015 + pcb.userData.spin*0.0005;
+        pcb.position.y += Math.sin(t*0.6 + idx)*0.002;
+      });
+      chips.forEach((c,i)=>{ c.material.emissiveIntensity = 0.2 + 0.2*Math.sin(t*2 + i); });
+
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    addEventListener('resize', ()=>{
+      camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    // Parallax on pointer
+    const target = new THREE.Vector3();
+    window.addEventListener('pointermove', (e)=>{
+      const nx = (e.clientX / innerWidth) * 2 - 1;
+      const ny = (e.clientY / innerHeight) * 2 - 1;
+      target.set(nx*0.6, -ny*0.2, 0);
+      controls.target.lerp(target, 0.08);
+    });
+
+    // Footer year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Copy WeChat ID helper
+    const copyBtn = document.getElementById('copyWechat');
+    const WECHAT_ID = 'PcbLord';
+    copyBtn.addEventListener('click', async ()=>{
+      try{
+        await navigator.clipboard.writeText(WECHAT_ID);
+        copyBtn.innerHTML = 'Copied: <b>'+WECHAT_ID+'</b>';
+        setTimeout(()=> copyBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 8a6 6 0 10-11.31 3.313A8 8 0 002 19l3.5-2A8 8 0 0012 21a8 8 0 008-8 6 6 0 00-2-5z" stroke="currentColor" stroke-width="1.5"/></svg> WeChat: <b style=\'letter-spacing:0.3px\'>PcbLord</b>' , 1500);
+      }catch(err){
+        copyBtn.textContent = 'Copy failed — ' + WECHAT_ID;
+        copyBtn.style.background = 'rgba(239,68,68,0.25)';
+      }
+    });
+
+    // Final diagnostics message
+    const ok = !!THREE && typeof OrbitControls === 'function' && !!renderer && !!scene && !!camera;
+    diag.textContent = ok ? 'Diagnostics: Three.js OK • OrbitControls OK • Scene running' : 'Diagnostics: something went wrong';
+  </script>
+</body>
+</html>
